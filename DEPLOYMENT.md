@@ -64,7 +64,7 @@ After deployment completes:
    - **Runtime**: `Node`
    - **Build Command**:
      ```
-     npm ci && npx prisma generate && npx prisma db push --accept-data-loss && npm run build
+     npm ci --include=dev && npx prisma generate && npx prisma db push --accept-data-loss && npm run build
      ```
    - **Start Command**: `npm start`
    - **Plan**: **Free**
