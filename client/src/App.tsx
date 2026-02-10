@@ -9,7 +9,7 @@ import { AuthGuard } from './components/auth/AuthGuard';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/conepilot.github.io">
       <Routes>
         <Route element={<Layout />}>
           {/* Public Routes */}

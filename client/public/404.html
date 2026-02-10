@@ -6,8 +6,8 @@
     <script>
       // Store the path for the SPA to handle
       sessionStorage.setItem('redirect', location.pathname + location.search + location.hash);
-      // Redirect to index.html
-      location.replace('/');
+      // Redirect to index.html with correct base path
+      location.replace('/conepilot.github.io/');
     </script>
   </head>
   <body>
