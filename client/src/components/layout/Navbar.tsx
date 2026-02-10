@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { LogOut, Home } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-    const { user, isAuthenticated, logout } = useAuthStore();
+    const { isAuthenticated, logout } = useAuthStore();
     const navigate = useNavigate();
 
     const handleLogout = () => {
