@@ -9,14 +9,26 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure CORS for GitHub Pages
+const allowedOrigins = [
+    'https://kairionyuta.github.io',
+    'http://localhost:5173', // Local dev
+    'http://localhost:3000'  // Local dev
+];
+
 const io = new Server(httpServer, {
     cors: {
-        origin: '*', // Allow all for dev, restrict in prod
-        methods: ['GET', 'POST']
+        origin: allowedOrigins,
+        methods: ['GET', 'POST'],
+        credentials: true
     }
 });
 
-app.use(cors());
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(express.json());
 
 import sessionRoutes from './routes/sessions';
