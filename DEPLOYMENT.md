@@ -41,31 +41,48 @@ After deployment completes:
 2. Click on **"Deploy to GitHub Pages"** workflow
 3. Click **"Run workflow"** → **"Run workflow"** button
 
-## Alternative: Manual Render Deployment
-
-If blueprint doesn't work, deploy manually:
+## Manual Render Deployment (Recommended)
 
 ### 1. Create PostgreSQL Database
-- New → PostgreSQL
-- Name: `conepilot-db`
-- Free plan
-- Copy the "Internal Database URL"
+1. Go to https://dashboard.render.com/
+2. Click **"New +"** → **"PostgreSQL"**
+3. Name: `conepilot-db`
+4. Database: `conepilot`
+5. User: `conepilot`
+6. Region: Choose closest to you
+7. Plan: **Free**
+8. Click **"Create Database"**
+9. **Copy the "Internal Database URL"** (starts with `postgresql://`)
 
 ### 2. Create Web Service
-- New → Web Service
-- Connect your repo
-- Root directory: `server`
-- Build command: `npm install && npx prisma generate && npm run build`
-- Start command: `npm start`
-- Free plan
+1. Click **"New +"** → **"Web Service"**
+2. Connect your GitHub repository: `KairiOnyuta/conepilot.github.io`
+3. Configure:
+   - **Name**: `conepilot-backend`
+   - **Region**: Same as database
+   - **Root Directory**: `server`
+   - **Runtime**: `Node`
+   - **Build Command**:
+     ```
+     npm install && npx prisma generate && npx prisma db push --accept-data-loss && npm run build
+     ```
+   - **Start Command**: `npm start`
+   - **Plan**: **Free**
 
 ### 3. Add Environment Variables
-Add these in the service's **Environment** tab:
-- `DATABASE_URL`: (paste the database URL)
-- `DIRECT_URL`: (paste the database URL again)
-- `JWT_SECRET`: (generate a random string)
+Before deploying, click **"Advanced"** and add these environment variables:
+- `DATABASE_URL`: (paste the Internal Database URL from step 1)
+- `DIRECT_URL`: (paste the same URL again)
+- `JWT_SECRET`: `your-super-secret-key-change-this-to-random-string`
 - `PORT`: `10000`
 - `NODE_ENV`: `production`
+
+4. Click **"Create Web Service"**
+
+### 4. Wait for Deployment
+- This takes 3-5 minutes
+- Watch the logs for any errors
+- When done, you'll see "Your service is live 🎉"
 
 ## Testing
 Once both are deployed:
