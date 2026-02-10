@@ -136,7 +136,6 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     // Field coords: origin (0,0) at bottom-left, Y increases upward
     // Canvas coords: origin (0,0) at top-left, Y increases downward
     const fieldToCanvasY = (fy: number) => (fH - fy) * SCALE;
-    const canvasToFieldY = (cy: number) => fH - (cy / SCALE);
 
     // Convert screen pointer to field coordinates (meters), with optional snapping
     const pointerToFieldCoords = (stage: any): { raw: { x: number; y: number }; snapped: { x: number; y: number } } | null => {
