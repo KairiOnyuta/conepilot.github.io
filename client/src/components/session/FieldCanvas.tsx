@@ -299,11 +299,11 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
 
     // Don't render until we have a width measurement (prevents initial oversized flash)
     if (containerWidth === 0) {
-        return <div ref={containerRef} className="w-full min-h-[100px]" />;
+        return <div ref={containerRef} className="w-full overflow-hidden min-h-[100px]" />;
     }
 
     return (
-        <div ref={containerRef} className="w-full">
+        <div ref={containerRef} className="w-full overflow-hidden">
             {/* Coordinate readout - above the canvas */}
             <div className="flex items-center justify-end mb-1.5 px-1">
                 <div className="bg-gray-100 rounded px-2 py-1 text-xs font-medium text-gray-600 select-none">
