@@ -81,9 +81,13 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const totalHeight = fieldHeightPx + PADDING * 2;
 
     // Fit scale: shrink or grow to fit container
-    const fitScale = containerSize.width > 0
+    // On mobile (width < 768px), use a minimum fitScale to ensure grid is large enough
+    const baseFitScale = containerSize.width > 0
         ? Math.min(containerSize.width / totalWidth, containerSize.height / totalHeight)
         : 1;
+    const isMobile = containerSize.width < 768;
+    const minFitScale = isMobile ? 0.8 : 0;
+    const fitScale = Math.max(baseFitScale, minFitScale);
 
     // Scale-aware stroke: divide by fitScale so strokes look consistent regardless of zoom level
     const strokeScale = 1 / fitScale;
@@ -233,16 +237,20 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
         [isSimulating, optimizedPath, fH]
     );
 
-    const stageWidth = containerSize.width || totalWidth;
-    const stageHeight = containerSize.height || totalHeight;
+    // On mobile, make stage larger to enable scrolling
+    const stageWidth = isMobile && containerSize.width > 0
+        ? Math.max(containerSize.width, totalWidth * fitScale)
+        : (containerSize.width || totalWidth);
+    const stageHeight = isMobile && containerSize.height > 0
+        ? Math.max(containerSize.height, totalHeight * fitScale)
+        : (containerSize.height || totalHeight);
 
     const snapLabel = snapSize > 0 ? `${snapSize}m` : 'OFF';
 
     return (
         <div
             ref={containerRef}
-            className="bg-white rounded-xl shadow-sm border border-border relative w-full h-full overflow-hidden"
-            style={{ touchAction: 'none' }}
+            className="bg-white rounded-xl shadow-sm border border-border relative w-full h-full overflow-auto"
         >
             <Stage
                 width={stageWidth}
@@ -262,6 +270,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 onTouchMove={handleMouseMove}
                 onMouseLeave={() => setMousePos(null)}
                 ref={stageRef}
+                style={{ touchAction: 'none' }}
             >
                 <Layer x={PADDING} y={PADDING}>
                     <Rect width={fieldWidthPx} height={fieldHeightPx} fill="#F4F4F5" stroke="#D4D4D8" strokeWidth={Math.max(0.5, 1 * strokeScale)} />
@@ -314,37 +323,45 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 </Layer>
             </Stage>
 
-            {/* Top-left: Coordinate readout with units */}
-            <div className="absolute top-2 left-2 bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-600 shadow-sm z-10 select-none pointer-events-none">
+            {/* Top-right: Coordinate readout with units */}
+            <div className="absolute top-2 right-2 bg-white/95 border border-gray-200 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 shadow-md z-10 select-none pointer-events-none">
                 {mousePos
-                    ? <span><span className="text-gray-400">X:</span> {mousePos.x.toFixed(2)}m <span className="text-gray-400 ml-1">Y:</span> {mousePos.y.toFixed(2)}m</span>
-                    : <span className="text-gray-400">-- metres, -- metres</span>
+                    ? <span><span className="text-gray-400">X:</span> {mousePos.x.toFixed(2)}m <span className="text-gray-400 ml-1.5">Y:</span> {mousePos.y.toFixed(2)}m</span>
+                    : <span className="text-gray-400 text-[10px]">-- metres --</span>
                 }
             </div>
 
-            {/* Bottom: All controls in one horizontal row */}
-            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2 z-10">
-                {/* Left: Snap toggle */}
-                <button
-                    onClick={handleCycleSnap}
-                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
-                        snapSize > 0
-                            ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                    }`}
-                    title="Click to cycle snap grid"
-                >
-                    <Grid3x3 size={14} />
-                    <span>SNAP</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        snapSize > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-400'
-                    }`}>
-                        {snapLabel}
-                    </span>
-                </button>
+            {/* Bottom: All controls centered below grid */}
+            <div
+                className="absolute left-0 right-0 flex items-center justify-center gap-2 z-10 pointer-events-none px-2"
+                style={{
+                    bottom: `${Math.max(8, containerSize.height - (effectivePos.y + (totalHeight * actualScale)))}px`
+                }}
+            >
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    {/* Snap toggle */}
+                    <button
+                        onClick={handleCycleSnap}
+                        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
+                            snapSize > 0
+                                ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                        title="Click to cycle snap grid"
+                    >
+                        <Grid3x3 size={14} />
+                        <span>SNAP</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            snapSize > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-400'
+                        }`}>
+                            {snapLabel}
+                        </span>
+                    </button>
 
-                {/* Right: Zoom controls in horizontal row */}
-                <div className="flex items-center gap-1.5">
+                    {/* Divider */}
+                    <div className="h-8 w-px bg-gray-300"></div>
+
+                    {/* Zoom controls */}
                     <button
                         onClick={handleZoomOut}
                         disabled={zoom <= MIN_ZOOM}

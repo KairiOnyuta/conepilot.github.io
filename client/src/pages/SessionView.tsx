@@ -64,16 +64,16 @@ export const SessionView: React.FC = () => {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
-                {/* Canvas Area - Optimized height for mobile */}
-                <div className="relative bg-background overflow-hidden flex-1 lg:flex-1 p-2 md:p-4 lg:p-6 flex flex-col min-h-0">
+                {/* Canvas Area - Takes most vertical space on mobile */}
+                <div className="relative bg-background flex-shrink-0 h-[calc(100vh-12rem)] lg:flex-1 lg:h-auto p-2 md:p-4 lg:p-6 flex flex-col overflow-hidden">
                     <SimulationOverlay />
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 relative">
                         <FieldCanvas width={800} height={600} />
                     </div>
                 </div>
 
-                {/* Controls Panel - Desktop Sidebar / Mobile Bottom - Compact and always visible */}
-                <div className="lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-border p-3 md:p-4 lg:p-6 flex flex-col gap-2 md:gap-3 lg:gap-6 flex-shrink-0 overflow-y-auto">
+                {/* Controls Panel - Desktop Sidebar / Mobile Bottom - Scrollable on mobile */}
+                <div className="lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-border p-3 md:p-4 lg:p-6 flex flex-col gap-2 md:gap-3 lg:gap-6 flex-shrink-0 overflow-y-auto touch-pan-y">
                     {/* Desktop Session Name */}
                     <div className="hidden lg:block">
                         <h2 className="text-xl font-bold text-text-primary mb-1">{currentSession.name}</h2>
