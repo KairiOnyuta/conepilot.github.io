@@ -4,8 +4,6 @@ import { useSessionStore } from '../store/useSessionStore';
 import { FieldCanvas } from '../components/session/FieldCanvas';
 import { SimulationOverlay } from '../components/session/SimulationOverlay';
 import { SessionControls } from '../components/session/SessionControls';
-import { SessionStats } from '../components/session/SessionStats';
-import { PlacementHistory } from '../components/session/PlacementHistory';
 import { calculateOptimalPath } from '../services/tsp';
 
 export const SessionView: React.FC = () => {
