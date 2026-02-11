@@ -39,7 +39,7 @@ const ConeImage = ({ x, y, opacity = 1, rotation = 0, size = 30 }: { x: number, 
 export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height: _height }) => {
     const { currentSession, addCone, updateConePosition, removeCone, optimizedPath, isSimulating } = useSessionStore();
     const stageRef = useRef<any>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const sizerRef = useRef<HTMLDivElement>(null);
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const [mousePos, setMousePos] = useState<{ x: number, y: number } | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
@@ -52,15 +52,17 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     // Ref to store current grid bounds (screen px) so touch handlers always have fresh values
     const gridBoundsRef = useRef({ left: 0, top: 0, right: 0, bottom: 0 });
 
-    // Measure container WIDTH only — never height, because height depends on
-    // Stage content which creates a feedback loop (bigger stage → bigger container → repeat)
+    // Measure available width from an invisible sizer element (height:0, width:100%).
+    // This is fully decoupled from the canvas content — the Stage can never
+    // affect the sizer's width, eliminating any possible feedback loop.
     useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
+        const sizer = sizerRef.current;
+        if (!sizer) return;
         const observer = new ResizeObserver(entries => {
-            setContainerWidth(entries[0].contentRect.width);
+            const w = Math.floor(entries[0].contentRect.width);
+            setContainerWidth(prev => (prev === w ? prev : w));
         });
-        observer.observe(container);
+        observer.observe(sizer);
         return () => observer.disconnect();
     }, []);
 
@@ -297,13 +299,14 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
 
     const snapLabel = snapSize > 0 ? `${snapSize}m` : 'OFF';
 
-    // Don't render until we have a width measurement (prevents initial oversized flash)
-    if (containerWidth === 0) {
-        return <div ref={containerRef} className="w-full overflow-hidden min-h-[100px]" />;
-    }
-
     return (
-        <div ref={containerRef} className="w-full overflow-hidden">
+        <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+            {/* Invisible sizer: always 100% of parent width, unaffected by canvas content */}
+            <div ref={sizerRef} style={{ width: '100%', height: 0 }} />
+
+            {containerWidth === 0 ? (
+                <div className="min-h-[100px]" />
+            ) : (<>
             {/* Coordinate readout - above the canvas */}
             <div className="flex items-center justify-end mb-1.5 px-1">
                 <div className="bg-gray-100 rounded px-2 py-1 text-xs font-medium text-gray-600 select-none">
@@ -442,6 +445,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 {/* Zoom level */}
                 <span className="text-xs text-gray-400 font-medium select-none">{Math.round(actualScale * 100)}%</span>
             </div>
+            </>)}
         </div>
     );
 };
