@@ -314,57 +314,62 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 </Layer>
             </Stage>
 
-            {/* Top-left: Zoom level */}
-            <div className="absolute top-3 left-3 bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-500 shadow-sm z-10 select-none pointer-events-none">
-                {Math.round(actualScale * 100)}%
+            {/* Top bar - Mobile optimized */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between gap-2 p-2 md:p-3 z-10 pointer-events-none">
+                {/* Left: Zoom level */}
+                <div className="bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-500 shadow-sm select-none">
+                    {Math.round(actualScale * 100)}%
+                </div>
+
+                {/* Center: Snap toggle - clickable */}
+                <button
+                    onClick={handleCycleSnap}
+                    className={`pointer-events-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
+                        snapSize > 0
+                            ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`}
+                    title="Click to cycle snap grid"
+                >
+                    <Grid3x3 size={14} />
+                    <span className="hidden sm:inline">SNAP</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        snapSize > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                        {snapLabel}
+                    </span>
+                </button>
+
+                {/* Right: Coordinate readout */}
+                <div className="bg-white/90 border border-gray-200 rounded-md px-2.5 py-1 text-xs font-mono text-gray-500 shadow-sm select-none">
+                    {mousePos
+                        ? <span className="hidden sm:inline"><span className="text-gray-400">X</span> {mousePos.x.toFixed(2)}m &nbsp;<span className="text-gray-400">Y</span> {mousePos.y.toFixed(2)}m</span>
+                        : <span className="text-gray-400 hidden sm:inline">-- , --</span>
+                    }
+                    {/* Mobile: Just show coords without labels */}
+                    {mousePos && <span className="sm:hidden">{mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}</span>}
+                </div>
             </div>
 
-            {/* Top-right: Live coordinate readout */}
-            <div className="absolute top-3 right-3 bg-white/90 border border-gray-200 rounded-md px-2.5 py-1 text-xs font-mono text-gray-500 shadow-sm z-10 select-none pointer-events-none">
-                {mousePos
-                    ? <span><span className="text-gray-400">X</span> {mousePos.x.toFixed(2)}m &nbsp;<span className="text-gray-400">Y</span> {mousePos.y.toFixed(2)}m</span>
-                    : <span className="text-gray-400">-- , --</span>
-                }
-            </div>
-
-            {/* Bottom-left: Snap toggle */}
-            <button
-                onClick={handleCycleSnap}
-                className={`absolute bottom-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
-                    snapSize > 0
-                        ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
-                title="Click to cycle snap grid"
-            >
-                <Grid3x3 size={14} />
-                <span>SNAP</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                    snapSize > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-400'
-                }`}>
-                    {snapLabel}
-                </span>
-            </button>
-
-            {/* Bottom-right: Zoom controls */}
-            <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 z-10">
+            {/* Bottom-right: Zoom controls - Mobile optimized */}
+            <div className="absolute bottom-3 right-3 flex flex-col gap-2 z-10">
                 <button
                     onClick={handleZoomIn}
                     disabled={zoom >= MAX_ZOOM}
-                    className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-2xl md:text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
                 >
                     +
                 </button>
                 <button
                     onClick={handleZoomOut}
                     disabled={zoom <= MIN_ZOOM}
-                    className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-2xl md:text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
                 >
                     −
                 </button>
                 <button
                     onClick={handleFitView}
-                    className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xs font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors select-none"
+                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xs font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors select-none"
                     title="Fit to view"
                 >
                     FIT

@@ -59,22 +59,23 @@ export const SessionView: React.FC = () => {
     return (
         <div className="flex-1 bg-background flex flex-col min-h-0">
             {/* Session Name - Mobile */}
-            <div className="lg:hidden text-center py-2 bg-white border-b border-border flex-shrink-0">
-                <h1 className="text-base font-semibold text-text-primary">{currentSession.name}</h1>
+            <div className="lg:hidden text-center py-2 px-3 bg-white border-b border-border flex-shrink-0 flex items-center justify-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`}></span>
+                <h1 className="text-base font-semibold text-text-primary truncate">{currentSession.name}</h1>
             </div>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
-                {/* Canvas Area */}
-                <div className="relative bg-background overflow-hidden flex-shrink-0 h-[50vh] lg:flex-1 lg:h-auto p-4 lg:p-6 flex flex-col">
+                {/* Canvas Area - More space on mobile */}
+                <div className="relative bg-background overflow-hidden flex-shrink-0 h-[65vh] lg:flex-1 lg:h-auto p-2 md:p-4 lg:p-6 flex flex-col">
                     <SimulationOverlay />
                     <div className="flex-1 min-h-0">
                         <FieldCanvas width={800} height={600} />
                     </div>
                 </div>
 
-                {/* Controls Panel - Desktop Sidebar / Mobile Bottom */}
-                <div className="lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-border p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 flex-shrink-0">
+                {/* Controls Panel - Desktop Sidebar / Mobile Bottom - More compact on mobile */}
+                <div className="lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-border p-3 md:p-4 lg:p-6 flex flex-col gap-3 md:gap-4 lg:gap-6 flex-shrink-0">
                     {/* Desktop Session Name */}
                     <div className="hidden lg:block">
                         <h2 className="text-xl font-bold text-text-primary mb-1">{currentSession.name}</h2>
@@ -100,16 +101,21 @@ export const SessionView: React.FC = () => {
                         />
                     </div>
 
-                    {/* Stats and History Grid - Mobile */}
-                    <div className="grid grid-cols-2 gap-4 lg:hidden">
-                        <div>
-                            <PlacementHistory history={placementHistory} />
-                        </div>
-                        <div>
-                            <SessionStats
-                                stats={simulationStats}
-                                totalCones={currentSession.cones.length}
-                            />
+                    {/* Stats - Mobile (compact) */}
+                    <div className="lg:hidden">
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-gray-50 p-2 rounded-lg">
+                                <div className="text-lg font-bold text-text-primary">{simulationStats.conesPlaced}/{currentSession.cones.length}</div>
+                                <div className="text-[10px] text-text-secondary">Placed</div>
+                            </div>
+                            <div className="bg-gray-50 p-2 rounded-lg">
+                                <div className="text-lg font-bold text-text-primary">{simulationStats.distanceTraveled.toFixed(1)}m</div>
+                                <div className="text-[10px] text-text-secondary">Distance</div>
+                            </div>
+                            <div className="bg-gray-50 p-2 rounded-lg">
+                                <div className="text-lg font-bold text-text-primary">{isSimulating ? `${simulationStats.etaSeconds}s` : '--'}</div>
+                                <div className="text-[10px] text-text-secondary">ETA</div>
+                            </div>
                         </div>
                     </div>
 
