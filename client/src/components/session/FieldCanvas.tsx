@@ -42,7 +42,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const [mousePos, setMousePos] = useState<{ x: number, y: number } | null>(null);
-    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+    const [containerWidth, setContainerWidth] = useState(0);
     const [zoom, setZoom] = useState(1);
     const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
     const [snapIndex, setSnapIndex] = useState(2); // default to 0.5m
@@ -52,13 +52,13 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     // Ref to store current grid bounds (screen px) so touch handlers always have fresh values
     const gridBoundsRef = useRef({ left: 0, top: 0, right: 0, bottom: 0 });
 
-    // Measure container size
+    // Measure container WIDTH only — never height, because height depends on
+    // Stage content which creates a feedback loop (bigger stage → bigger container → repeat)
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
         const observer = new ResizeObserver(entries => {
-            const { width, height } = entries[0].contentRect;
-            setContainerSize({ width, height });
+            setContainerWidth(entries[0].contentRect.width);
         });
         observer.observe(container);
         return () => observer.disconnect();
@@ -137,10 +137,14 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const totalWidth = fieldWidthPx + LABEL_PAD_LEFT + LABEL_PAD_RIGHT;
     const totalHeight = fieldHeightPx + LABEL_PAD_TOP + LABEL_PAD_BOTTOM;
 
-    // Fit to container: use width on mobile, both width+height on desktop
-    const widthFitScale = containerSize.width > 0 ? containerSize.width / totalWidth : 1;
-    // If container has a meaningful height (desktop with constrained layout), also fit to height
-    const heightFitScale = containerSize.height > 50 ? containerSize.height / totalHeight : Infinity;
+    // Fit to width (always stable — width comes from CSS layout, not content)
+    const widthFitScale = containerWidth > 0 ? containerWidth / totalWidth : 1;
+
+    // On desktop, also constrain by available viewport height to prevent vertical overflow
+    // Use window.innerHeight which is stable and doesn't depend on content
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    const maxStageHeight = isDesktop ? window.innerHeight - 220 : Infinity;
+    const heightFitScale = maxStageHeight < Infinity ? maxStageHeight / totalHeight : Infinity;
     const fitScale = Math.min(widthFitScale, heightFitScale);
 
     // Scale-aware stroke
@@ -154,11 +158,8 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const scaledHeight = totalHeight * actualScale;
 
     // Stage dimensions
-    const stageWidth = containerSize.width || totalWidth;
-    // Desktop (has height): fill container | Mobile (no height): auto-size to content
-    const stageHeight = containerSize.height > 50
-        ? containerSize.height
-        : Math.ceil(totalHeight * fitScale * zoom);
+    const stageWidth = containerWidth || totalWidth;
+    const stageHeight = Math.ceil(totalHeight * fitScale * zoom);
 
     // Center content when zoomed out
     const centerX = Math.max(0, (stageWidth - scaledWidth) / 2);
@@ -296,15 +297,15 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
 
     const snapLabel = snapSize > 0 ? `${snapSize}m` : 'OFF';
 
-    // Don't render until we have a measurement (prevents initial oversized flash)
-    if (containerSize.width === 0) {
-        return <div ref={containerRef} className="w-full lg:h-full min-h-[100px]" />;
+    // Don't render until we have a width measurement (prevents initial oversized flash)
+    if (containerWidth === 0) {
+        return <div ref={containerRef} className="w-full min-h-[100px]" />;
     }
 
     return (
-        <div ref={containerRef} className="w-full lg:h-full flex flex-col">
+        <div ref={containerRef} className="w-full">
             {/* Coordinate readout - above the canvas */}
-            <div className="flex items-center justify-end mb-1.5 px-1 flex-shrink-0">
+            <div className="flex items-center justify-end mb-1.5 px-1">
                 <div className="bg-gray-100 rounded px-2 py-1 text-xs font-medium text-gray-600 select-none">
                     {mousePos
                         ? <span><span className="text-gray-400">X:</span> {mousePos.x.toFixed(2)}m <span className="text-gray-400 ml-1.5">Y:</span> {mousePos.y.toFixed(2)}m</span>
@@ -313,10 +314,10 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 </div>
             </div>
 
-            {/* Canvas - tightly sized to grid content, flex-1 on desktop */}
+            {/* Canvas - tightly sized to grid content */}
             <div
                 ref={canvasWrapperRef}
-                className="bg-white rounded-xl shadow-sm border border-border overflow-hidden lg:flex-1 lg:min-h-0"
+                className="bg-white rounded-xl shadow-sm border border-border overflow-hidden"
                 style={{ touchAction: 'none' }}
             >
                 <Stage
@@ -392,7 +393,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
             </div>
 
             {/* Controls bar - below the canvas, never obstructing */}
-            <div className="flex items-center justify-center gap-2 mt-2 px-1 flex-shrink-0">
+            <div className="flex items-center justify-center gap-2 mt-2 px-1">
                 {/* Snap toggle */}
                 <button
                     onClick={handleCycleSnap}
