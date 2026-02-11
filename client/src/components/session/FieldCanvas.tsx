@@ -40,6 +40,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const { currentSession, addCone, updateConePosition, removeCone, optimizedPath, isSimulating } = useSessionStore();
     const stageRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const [mousePos, setMousePos] = useState<{ x: number, y: number } | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
     const [zoom, setZoom] = useState(1);
@@ -47,6 +48,9 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const [snapIndex, setSnapIndex] = useState(2); // default to 0.5m
 
     const snapSize = SNAP_OPTIONS[snapIndex];
+
+    // Ref to store current grid bounds (screen px) so touch handlers always have fresh values
+    const gridBoundsRef = useRef({ left: 0, top: 0, right: 0, bottom: 0 });
 
     // Measure container WIDTH only (height is determined by content)
     useEffect(() => {
@@ -66,6 +70,56 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
             setStagePos({ x: 0, y: 0 });
         }
     }, [zoom]);
+
+    // Allow scrolling when touching the label/padding area of the canvas
+    useEffect(() => {
+        const wrapper = canvasWrapperRef.current;
+        if (!wrapper) return;
+
+        // Find the nearest scrollable ancestor
+        const findScrollParent = (el: HTMLElement): HTMLElement | null => {
+            let parent = el.parentElement;
+            while (parent) {
+                const { overflowY } = getComputedStyle(parent);
+                if (overflowY === 'auto' || overflowY === 'scroll') return parent;
+                parent = parent.parentElement;
+            }
+            return document.documentElement;
+        };
+
+        const scrollParent = findScrollParent(wrapper);
+        let touchOnGrid = false;
+        let lastTouchY = 0;
+
+        const onTouchStart = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            const rect = wrapper.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            const b = gridBoundsRef.current;
+
+            touchOnGrid = x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+            lastTouchY = touch.clientY;
+        };
+
+        const onTouchMove = (e: TouchEvent) => {
+            if (!touchOnGrid && scrollParent) {
+                // Touch is on padding/labels — scroll the page
+                const touch = e.touches[0];
+                const deltaY = lastTouchY - touch.clientY;
+                lastTouchY = touch.clientY;
+                scrollParent.scrollTop += deltaY;
+            }
+        };
+
+        wrapper.addEventListener('touchstart', onTouchStart, { passive: true });
+        wrapper.addEventListener('touchmove', onTouchMove, { passive: true });
+
+        return () => {
+            wrapper.removeEventListener('touchstart', onTouchStart);
+            wrapper.removeEventListener('touchmove', onTouchMove);
+        };
+    }, []);
 
     if (!currentSession) return null;
 
@@ -125,6 +179,14 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     };
 
     const effectivePos = canDrag ? clampStagePos(stagePos) : { x: centerX, y: centerY };
+
+    // Update grid bounds ref for touch scroll detection (screen pixels relative to canvas wrapper)
+    gridBoundsRef.current = {
+        left: effectivePos.x + LABEL_PAD_LEFT * actualScale,
+        top: effectivePos.y + LABEL_PAD_TOP * actualScale,
+        right: effectivePos.x + (LABEL_PAD_LEFT + fieldWidthPx) * actualScale,
+        bottom: effectivePos.y + (LABEL_PAD_TOP + fieldHeightPx) * actualScale,
+    };
 
     // Zoom handlers
     const handleZoomIn = () => setZoom(prev => Math.min(prev + ZOOM_STEP, MAX_ZOOM));
@@ -242,6 +304,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
 
             {/* Canvas - tightly sized to grid content */}
             <div
+                ref={canvasWrapperRef}
                 className="bg-white rounded-xl shadow-sm border border-border overflow-hidden"
                 style={{ touchAction: 'none' }}
             >
