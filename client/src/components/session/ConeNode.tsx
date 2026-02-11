@@ -6,6 +6,7 @@ import type { ConeData } from '../../store/useSessionStore';
 interface ConeNodeProps {
     cone: ConeData;
     scale: number; // pixels per meter
+    fieldWidth: number; // field width in meters (for clamping)
     fieldHeight: number; // field height in meters (for Y-flip)
     onDragEnd: (id: string, x: number, y: number) => void;
     onDelete: (id: string) => void;
@@ -15,17 +16,20 @@ interface ConeNodeProps {
     coneSize?: number; // pixel diameter of the cone visual (in canvas coords)
 }
 
-export const ConeNode: React.FC<ConeNodeProps> = ({ cone, scale, fieldHeight, onDragEnd, onDelete, imageMode, opacity = 1, snapSize = 0, coneSize = 34 }) => {
+export const ConeNode: React.FC<ConeNodeProps> = ({ cone, scale, fieldWidth, fieldHeight, onDragEnd, onDelete, imageMode, opacity = 1, snapSize = 0, coneSize = 34 }) => {
     const pixelX = cone.x * scale;
     const pixelY = (fieldHeight - cone.y) * scale;
     const [image] = useImage('/cone.png');
 
     const snapPx = snapSize * scale;
     const half = coneSize / 2;
-    // Hit area should match cone size closely (coneSize is in field coordinate pixels)
-    // Just slightly larger for easier clicking (1.2x), but not too big
     const hitSize = coneSize * 1.2;
     const badgeOffset = half * 0.7;
+
+    // Field boundaries in canvas pixel coordinates
+    const minPx = 0;
+    const maxPxX = fieldWidth * scale;
+    const maxPxY = fieldHeight * scale;
 
     return (
         <Group
@@ -33,17 +37,44 @@ export const ConeNode: React.FC<ConeNodeProps> = ({ cone, scale, fieldHeight, on
             y={pixelY}
             opacity={opacity}
             draggable
-            onDragMove={snapPx > 0 ? (e) => {
-                e.target.x(Math.round(e.target.x() / snapPx) * snapPx);
-                e.target.y(Math.round(e.target.y() / snapPx) * snapPx);
-            } : undefined}
+            onDragMove={(e) => {
+                let x = e.target.x();
+                let y = e.target.y();
+
+                // Clamp to field boundaries
+                x = Math.max(minPx, Math.min(maxPxX, x));
+                y = Math.max(minPx, Math.min(maxPxY, y));
+
+                // Snap
+                if (snapPx > 0) {
+                    x = Math.round(x / snapPx) * snapPx;
+                    y = Math.round(y / snapPx) * snapPx;
+                }
+
+                // Re-clamp after snap (snap could push outside)
+                x = Math.max(minPx, Math.min(maxPxX, x));
+                y = Math.max(minPx, Math.min(maxPxY, y));
+
+                e.target.x(x);
+                e.target.y(y);
+            }}
             onDragEnd={(e) => {
                 let newX = e.target.x() / scale;
                 let newY = fieldHeight - (e.target.y() / scale);
+
+                // Clamp to field boundaries
+                newX = Math.max(0, Math.min(fieldWidth, newX));
+                newY = Math.max(0, Math.min(fieldHeight, newY));
+
                 if (snapSize > 0) {
                     newX = Math.round(newX / snapSize) * snapSize;
                     newY = Math.round(newY / snapSize) * snapSize;
                 }
+
+                // Re-clamp after snap
+                newX = Math.max(0, Math.min(fieldWidth, newX));
+                newY = Math.max(0, Math.min(fieldHeight, newY));
+
                 onDragEnd(cone.id, newX, newY);
             }}
             onClick={(e) => {
@@ -65,7 +96,7 @@ export const ConeNode: React.FC<ConeNodeProps> = ({ cone, scale, fieldHeight, on
                 if (container) container.style.cursor = 'default';
             }}
         >
-            {/* Selection Area / Hit Area - sized to match cone image */}
+            {/* Selection Area / Hit Area */}
             <Rect
                 x={-hitSize / 2}
                 y={-hitSize / 2}
