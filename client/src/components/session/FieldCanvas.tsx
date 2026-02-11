@@ -74,8 +74,8 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
     const fieldWidthPx = fW * SCALE;
     const fieldHeightPx = fH * SCALE;
 
-    // Dynamic padding: smaller for small fields, larger for big ones
-    const PADDING = Math.max(fW, fH) <= 5 ? 30 : 60;
+    // Dynamic padding: minimal for small fields (3x3), moderate for medium, larger for big
+    const PADDING = Math.max(fW, fH) <= 3 ? 20 : Math.max(fW, fH) <= 5 ? 30 : 60;
 
     const totalWidth = fieldWidthPx + PADDING * 2;
     const totalHeight = fieldHeightPx + PADDING * 2;
@@ -314,17 +314,20 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                 </Layer>
             </Stage>
 
-            {/* Top bar - Mobile optimized */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between gap-2 p-2 md:p-3 z-10 pointer-events-none">
-                {/* Left: Zoom level */}
-                <div className="bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-500 shadow-sm select-none">
-                    {Math.round(actualScale * 100)}%
-                </div>
+            {/* Top-left: Coordinate readout with units */}
+            <div className="absolute top-2 left-2 bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-600 shadow-sm z-10 select-none pointer-events-none">
+                {mousePos
+                    ? <span><span className="text-gray-400">X:</span> {mousePos.x.toFixed(2)}m <span className="text-gray-400 ml-1">Y:</span> {mousePos.y.toFixed(2)}m</span>
+                    : <span className="text-gray-400">-- metres, -- metres</span>
+                }
+            </div>
 
-                {/* Center: Snap toggle - clickable */}
+            {/* Bottom: All controls in one horizontal row */}
+            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2 z-10">
+                {/* Left: Snap toggle */}
                 <button
                     onClick={handleCycleSnap}
-                    className={`pointer-events-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
+                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg shadow-md border text-xs font-medium select-none transition-colors ${
                         snapSize > 0
                             ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -332,7 +335,7 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                     title="Click to cycle snap grid"
                 >
                     <Grid3x3 size={14} />
-                    <span className="hidden sm:inline">SNAP</span>
+                    <span>SNAP</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         snapSize > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-400'
                     }`}>
@@ -340,40 +343,30 @@ export const FieldCanvas: React.FC<FieldCanvasProps> = ({ width: _width, height:
                     </span>
                 </button>
 
-                {/* Right: Coordinate readout */}
-                <div className="bg-white/90 border border-gray-200 rounded-md px-2.5 py-1 text-xs font-mono text-gray-500 shadow-sm select-none">
-                    {mousePos
-                        ? <span className="hidden sm:inline"><span className="text-gray-400">X</span> {mousePos.x.toFixed(2)}m &nbsp;<span className="text-gray-400">Y</span> {mousePos.y.toFixed(2)}m</span>
-                        : <span className="text-gray-400 hidden sm:inline">-- , --</span>
-                    }
-                    {/* Mobile: Just show coords without labels */}
-                    {mousePos && <span className="sm:hidden">{mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}</span>}
+                {/* Right: Zoom controls in horizontal row */}
+                <div className="flex items-center gap-1.5">
+                    <button
+                        onClick={handleZoomOut}
+                        disabled={zoom <= MIN_ZOOM}
+                        className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                    >
+                        −
+                    </button>
+                    <button
+                        onClick={handleFitView}
+                        className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xs font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors select-none"
+                        title="Fit to view"
+                    >
+                        FIT
+                    </button>
+                    <button
+                        onClick={handleZoomIn}
+                        disabled={zoom >= MAX_ZOOM}
+                        className="w-10 h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                    >
+                        +
+                    </button>
                 </div>
-            </div>
-
-            {/* Bottom-right: Zoom controls - Mobile optimized */}
-            <div className="absolute bottom-3 right-3 flex flex-col gap-2 z-10">
-                <button
-                    onClick={handleZoomIn}
-                    disabled={zoom >= MAX_ZOOM}
-                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-2xl md:text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
-                >
-                    +
-                </button>
-                <button
-                    onClick={handleZoomOut}
-                    disabled={zoom <= MIN_ZOOM}
-                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-2xl md:text-xl font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
-                >
-                    −
-                </button>
-                <button
-                    onClick={handleFitView}
-                    className="w-12 h-12 md:w-10 md:h-10 bg-white border border-gray-300 rounded-lg shadow-md flex items-center justify-center text-xs font-bold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors select-none"
-                    title="Fit to view"
-                >
-                    FIT
-                </button>
             </div>
         </div>
     );
